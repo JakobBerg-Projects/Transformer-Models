@@ -6,25 +6,31 @@ class DecoderBlock(nn.Module):
         super().__init__()
         self.norm1 = nn.LayerNorm(dim)
         self.norm2 = nn.LayerNorm(dim)
-        self.attn = nn.MultiheadAttention(dim, num_heads)
+        self.attn = nn.MultiheadAttention(dim, num_heads, dropout=dropout, batch_first=True)
         self.mlp = nn.Sequential(
-            nn.Linear(dim, 4*dim),
+            nn.Linear(dim, 4 * dim),
             nn.GELU(),
-            nn.Linear(4*dim, dim),
+            nn.Linear(4 * dim, dim),
         )
         self.dropout = nn.Dropout(dropout)
                                   
-    def forward(self, x, mask=None):
+    def forward(self, x, attn_mask=None, padding_mask=None):
         # TODO: Implement this method
         normed = self.norm1(x)
-        attn_out= self.attn(normed, normed, normed, key_padding_mask=mask)
+        attn_out, _ = self.attn(
+            normed, normed, normed,
+            attn_mask=attn_mask,
+            key_padding_mask=padding_mask,
+            need_weights=False,
+        )
         x = x + self.dropout(attn_out)
 
+        # Feed-forward block (pre-norm)
         normed2 = self.norm2(x)
         mlp_out = self.mlp(normed2)
         x = x + self.dropout(mlp_out)
 
-        return x 
+        return x
         
 
 
