@@ -25,15 +25,45 @@ class QADataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, idx):
+        # TODO: Implement this method
         question, answer = self.dataset[idx]["question"], self.dataset[idx]["answer"]
 
-        # TODO: Implement this method
+        # 1. Tokenize question and answer
+        question_tokens = self.tokenizer.encode(question)
+        answer_tokens = self.tokenizer.encode(answer)
+
+        # 2. Concatenate with [SEP] between, add [END] at the end
+        sep_id = self.tokenizer.sep_token_id
+        end_id = self.tokenizer.end_token_id
+        pad_id = self.tokenizer.pad_token_id
+
+        tokens = question_tokens + [sep_id] + answer_tokens + [end_id]
+
+        # 3. Truncate or pad to max_length
+        if len(tokens) > self.max_length:
+            tokens = tokens[:self.max_length]
+            tokens[-1] = end_id  # ensure [END] is preserved at the last position
+        else:
+            tokens = tokens + [pad_id] * (self.max_length - len(tokens))
+
+        tokens = torch.tensor(tokens, dtype=torch.long)
+
+        # 4. Create source and target sequences (shifted by one for next-token prediction)
+        source_sequence = tokens[:-1]
+        target_sequence = tokens[1:].clone()
+
+        # 5. Create key padding mask (True where source is [PAD])
+        key_padding_mask = source_sequence == pad_id
+
+        # 6. Set target to -100 where target tokens are [PAD] (ignored by loss)
+        target_sequence[target_sequence == pad_id] = -100
 
         return {
-            "source_sequence": ..., 
-            "target_sequence": ...,
-            "key_padding_mask": ...,
+            "source_sequence": source_sequence,
+            "target_sequence": target_sequence,
+            "key_padding_mask": key_padding_mask,
         }
+        
 
 
 if __name__ == "__main__":
