@@ -10,6 +10,9 @@ class DecoderBlock(nn.Module):
         # TODO: Implement this method
 
 
+
+    
+
 class PositionalEncoding(nn.Module):
     """
     Positional encoding module: adds positional information to the input embeddings.
@@ -18,12 +21,20 @@ class PositionalEncoding(nn.Module):
         super().__init__()
         # TODO: Implement this method
         # Use self.register_bufffer("positional_encoding", positional_encoding) to store the positional encoding (not a parameter)
+        pe = torch.zeros(max_len, embed_size)
+        position = torch.arange(0, max_len).unsqueeze(1).float()
+        i = torch.arange(0, embed_size, 2).float()
+        pe[:, 0::2] = torch.sin(position / (10000 ** (i / embed_size)))
+        pe[:, 1::2] = torch.cos(position / (10000 ** (i / embed_size)))
+
+        self.register_buffer('pe', pe.unsqueeze(0)) 
 
     def forward(self, x):
         # TODO: Implement this method
         # Remember to slice the positional encoding to match the length of the input sequence
         # and to move the positional encoding to the device of the input tensor
-
+        return x + self.pe[:, :x.size(1), :]
+        
 
 class TransformerModel(nn.Module):
     def __init__(self, config):
@@ -68,6 +79,8 @@ class TransformerModel(nn.Module):
         """
         # TODO: Implement this method
         # You can use torch.ones and torch.triu to generate the mask and cast it to a boolean tensor with .bool()
+        mask = torch.triu(torch.ones(seq_len, seq_len), diagonal=1).bool()
+        return mask
 
 
 if __name__ == "__main__":
