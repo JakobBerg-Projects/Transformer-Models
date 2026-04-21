@@ -2,12 +2,30 @@ import torch
 import torch.nn as nn
 
 class DecoderBlock(nn.Module):
-    def __init__(self, embed_size, num_heads, dropout):
+    def __init__(self, dim, num_heads, dropout=0.1):
         super().__init__()
+        self.norm1 = nn.LayerNorm(dim)
+        self.norm2 = nn.LayerNorm(dim)
+        self.attn = nn.MultiheadAttention(dim, num_heads)
+        self.mlp = nn.Sequential(
+            nn.Linear(dim, 4*dim),
+            nn.GELU(),
+            nn.Linear(4*dim, dim),
+        )
+        self.dropout = nn.Dropout(dropout)
+                                  
+    def forward(self, x, mask=None):
         # TODO: Implement this method
+        normed = self.norm1(x)
+        attn_out= self.attn(normed, normed, normed, key_padding_mask=mask)
+        x = x + self.dropout(attn_out)
 
-    def forward(self, x, attn_mask, padding_mask):
-        # TODO: Implement this method
+        normed2 = self.norm2(x)
+        mlp_out = self.mlp(normed2)
+        x = x + self.dropout(mlp_out)
+
+        return x 
+        
 
 
 class PositionalEncoding(nn.Module):
