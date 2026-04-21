@@ -1,10 +1,23 @@
 import torch
 
 def greedy_sampling(last_token_logits):
-    # TODO: Implement greedy sampling (input is the logits of the last token, output is the selected token ID)
+    return torch.argmax(last_token_logits)
+
+    
 
 def top_p_sampling(last_token_logits, p=0.95, temperature=0.7):
-    # TODO: Implement top-p sampling with temperature (input is the logits of the last token, output is the selected token ID)
+    logits = last_token_logits / temperature
+
+    probs = torch.softmax(logits, dim=-1)
+    sorted_probs, sorted_indices = torch.sort(probs, descending=True)
+    cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
+
+    # Remove tokens once cumulative prob exceeds p (shift right to keep the token that crosses p)
+    sorted_indices_to_remove = cumulative_probs - sorted_probs > p
+    sorted_probs[sorted_indices_to_remove] = 0.0
+
+    sampled_sorted_idx = torch.multinomial(sorted_probs, num_samples=1)
+    return sorted_indices[sampled_sorted_idx]
 
 def sample_sequence(input_sequence, model, strategy, max_len, device, end_id, p=0.95, temperature=0.7):
     model.eval()
