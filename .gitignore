@@ -3,3 +3,4 @@
 01_encoder_sentiment_classifier/imdb_train
 01_encoder_sentiment_classifier/imdb_test
 __pycache__
+*.pth
