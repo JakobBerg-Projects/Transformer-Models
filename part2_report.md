@@ -1,4 +1,4 @@
-Part 2: Decoder-only Model for Text Generation
+# Part 2: Decoder-only Model for Text Generation
 ## Decoder Block
 The decoder block is implemented similarly to the encoder block described in Part 1, with two sub-layers: a masked multi-head self-attention layer and an MLP block, each wrapped with a residual connection and layer normalization. The key difference from the encoder block is the addition of a causal mask in the attention layer, which prevents each token from attending to future positions, essential for autoregressive text generation. The MLP block follows the same structure as in Part 1, with two linear layers and a GELU activation with a hidden size of 4d.
 
