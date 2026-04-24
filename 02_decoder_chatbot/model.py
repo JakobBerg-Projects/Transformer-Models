@@ -22,6 +22,7 @@ class DecoderBlock(nn.Module):
             attn_mask=attn_mask,
             key_padding_mask=padding_mask,
             need_weights=False,
+            is_causal=True
         )
         x = x + self.dropout(attn_out)
 
