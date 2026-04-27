@@ -7,7 +7,7 @@
 We collaborated on both tasks throughout the project, approach, hyperparameter choices and debugging were discussed jointly. The bullets below describe who took the lead on each component; everything else was done together or by the other person.
 
 **Part 1 — Encoder-only IMDb sentiment classifier**
-* Tobias: Encoder and Decoder implementations.
+* Tobias: Encoder implementations.
 * Jakob: pre-processing and tokenization, `IMDBDataset` / `create_mask`, positional encoding, training and evaluation loops, `classify_review`.
 
 **Part 2 — Decoder-only GooAQ chatbot**
@@ -150,15 +150,19 @@ Causal mask — enforces left-to-right generation. Token at position i can only 
 Key padding mask — prevents tokens from attending to [PAD] tokens. Padding is added to make all sequences in a batch the same length, but these are meaningless positions. The mask is True at padding positions so they are excluded from attention score computation.
 
 Both masks are applied simultaneously inside MultiheadAttention via the attn_mask and key_padding_mask arguments respectively.
+
 2. #### MLP Block (Feed-Forward Network)
 A position-wise two-layer MLP applied independently to each token. It uses a hidden size of 4d and a GELU activation:
 MLP(x)=Linear(GELU(Linear(x))) 
 This is where most of the model's representational capacity lives. The attention layer routes information between tokens, but the MLP transforms it.
 Dropout is applied after both sub-layers, and layer normalization is applied before each sub-layer (pre-norm style, as in GPT-2).
 
+![Decoder block and MLP sub-layer](images/DecoderAndMLP.png)
+
+*Figure 2: A visual representation of the Decoder Block*
+
 ### Linear Classification Layer
-After the NN
-N decoder blocks, a single linear layer projects from d dimensions to vocabulary size V. The output at each position is a vector of logits, one per token in the vocabulary representing the unnormalized log-probabilities of what token comes next.
+After the N decoder blocks, a single linear layer projects from d dimensions to vocabulary size V. The output at each position is a vector of logits, one per token in the vocabulary representing the unnormalized log-probabilities of what token comes next.
 
 
 ## BPE Tokenizer
@@ -189,6 +193,10 @@ The implementation process was largely straightforward. The dataset pipeline, de
 The model's predictions were generally poor. Generated answers rarely had any meaningful connection to the input question and often consisted of incoherent or repetitive text. This is likely a consequence of the model being relatively small (~36M parameters) and trained on a limited subset of the dataset for five epochs, which is insufficient for a language model of this complexity to generalize well.
 
 Sampling strategy. Greedy sampling tended to produce repetitive, deterministic outputs, often getting stuck in loops where the same token or phrase was repeated until the maximum sequence length was reached. This is a well-known failure mode of greedy decoding. Top-p sampling produced more varied outputs due to the stochastic sampling from the nucleus, but the added randomness also introduced more incoherence. At higher temperatures the outputs degraded into near-random token sequences, while lower temperatures brought the behavior closer to greedy.
+
+![Chatting with the model](images/ChatWithModel.jpg)
+
+*Figure 3: Here we can se the results from trying to converse with our model. The results are clearly incorect and often make no sense at all.*
 
 Overfitting. Given that training loss decreased quickly to around 3 but the model produced poor answers at inference time, there are signs of overfitting to surface-level token patterns rather than learning to model question-answer relationships. The dataset implementation in QADataset truncates long sequences and forces an [END] token at position max_length, which means many answers are cut off mid-sentence during training. This likely hurt the model's ability to learn coherent answer structure.
 
